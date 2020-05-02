@@ -78,4 +78,154 @@
   (take ls (- (length ls) n)))
 
 ;; 9
+(defun group (ls n)
+  (if (null ls)
+      nil
+      (cons (take ls n) (group (drop ls n) n))))
 
+;; 10
+(defun my-position (x ls)
+  (if (= x (car ls))
+      break
+      (1+ (my-position x (cdr ls)))))
+;
+(defun my-position (x ls)
+  (labels ((position-sub (ls n)
+             (cond ((null ls) nil)
+                   ((eql x (car ls)) n)
+                   (t (position-sub (cdr ls) (1+ n))))))
+    (position-sub ls 0)))
+
+;; 11
+(defun my-count (x ls)
+  (cond ((null ls) 0)
+        ((eql x (car ls)) (1+ (my-count x (cdr ls))))
+        (t (my-count x (cdr ls)))))
+
+;; 12
+(defun sum-list (ls)
+  (labels ((sum-list-sub (ls s)
+             (if (null ls)
+                 s
+                 (sum-list-sub (cdr ls) (+ (car ls) s)))))
+    (sum-list-sub ls 0)))
+;
+(defun sum-list (ls)
+  "もちろん最も簡単な方法はreduceを使うパターン"
+  (reduce #'+ ls))
+
+;; 13
+(defun max-list (ls)
+  (labels ((max-list-sub (ls m)
+             (cond ((null ls) m)
+                   ((< m (car ls)) (max-list-sub (cdr ls) (car ls)))
+                   (t (max-list-sub (cdr ls) m)))))
+    (max-list-sub (cdr ls) (car ls))))
+;
+(defun max-list (ls)
+  "もちろん最も簡単な方法はreduceを使うパターン"
+  (reduce #'max ls))
+;
+(defun max-list (ls)
+  "dolistを使って少し手続きっぽく書くことも可能"
+  (let ((m (car ls)))
+    (dolist (x (cdr ls) m)
+      (when (< m x) (setf m x)))))
+
+(defun min-list (ls)
+  (labels ((min-list-sub (ls m)
+             (cond ((null ls) m)
+                   ((> m (car ls)) (min-list-sub (cdr ls) (car ls)))
+                   (t (min-list-sub (cdr ls) m)))))
+    (min-list-sub (cdr ls) (car ls))))
+
+;; 14
+(defun adjacent (x y ls)
+  (cond ((null (cdr ls)) nil)
+        ((and (eql x (car ls)) (eql y (car (cdr ls)))) t)
+        (t (adjacent x y (cdr ls)))))
+
+;; 15
+(defun before (x y ls)
+  (cond ((null (cdr ls)) nil)
+        ((and (eql x (car ls)) (member y (cdr ls))) t)
+        (t (before x y (cdr ls)))))
+;
+(defun before (x y ls)
+  "memberはtの場合その値を先頭要素とするリストを返す"
+  (let ((xs (member x ls)))
+    (and xs (member y (cdr xs)))))
+
+;; 16
+(defun iota (n m)
+  (if (> n m)
+      nil
+    (cons n (iota (1+ n) m))))
+
+;; 17
+(defun set-of-list (ls)
+  (cond ((null ls) nil)
+        ((member (car ls) (cdr ls)) (set-of-list (cdr ls)))
+        (t (cons (car ls) (set-of-list (cdr ls))))))
+;
+(defun set-of-list (ls)
+  "reduceを使別解．aは保存される変数"
+  (reduce #'(lambda (a x)
+              (if (member x a)
+                  a
+                  (cons x a)))
+          ls
+          :initial-value nil))
+
+;; 18
+(defun my-union (ls1 ls2)
+  (cond ((null ls1) ls2)
+        ((member (car ls1) ls2) (my-union (cdr ls1) ls2))
+        (t (cons (car ls1) (my-union (cdr ls1) ls2)))))
+
+;; 19
+(defun my-intersection (xs ys)
+  (cond ((null xs) nil)
+        ((member (car xs) ys) (cons (car xs) (my-intersection (cdr xs) ys)))
+        (t (my-intersection (cdr xs) ys))))
+
+;; 20
+(defun difference (xs ys)
+  (cond ((null xs) nil)
+        ((member (car xs) ys) (difference (cdr xs) ys))
+        (t (cons (car xs) (difference (cdr xs) ys)))))
+
+;; 21
+;
+(defun merge-list (func xs ys)
+  "それぞれのリストから１つずつ取り出し，条件に満たすものを採用していく"
+  (cond ((null xs) ys)
+        ((null ys) xs)
+        ((funcall func (car xs) (car ys))
+         (cons (car xs) (merge-list func (cdr xs) ys)))
+        (t (cons (car ys) (merge-list func xs (cdr ys))))))
+
+;; 22
+;
+(defun merge-sort (func n ls)
+  "ソートは内部で同様の処理をするときに再帰的に呼び出すことがコツ"
+  (if (= n 1)
+      (list (car ls))
+      (let ((m (floor n 2)))
+         (merge-list func (merge-sort func m ls) (merge-sort func (- n m) (drop ls m))))))
+
+;; 23
+(defun prefix (ls ps)
+  (cond ((null ps) t)
+        ((eql (car ls) (car ps)) (prefix (cdr ls) (cdr ps)))
+        (t nil)))
+
+;; 24
+(defun suffix (ls ss)
+  (prefix (drop ls (- (length ls) (length ss))) ss))
+
+;; 25
+(defun sublistp (xs ls)
+  (cond ((> (length xs) (length ls)) nil)
+        ((prefix ls xs) t)
+        (t (sublistp xs (cdr ls)))))
