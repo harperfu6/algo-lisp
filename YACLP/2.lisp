@@ -175,9 +175,98 @@
 ;; 38
 ;
 (defun drop-same-code (x ls)
-  "先頭から連続している記号を取り除く"
+  "本関数は「連続した」記号であることに留意（あまり汎用性は無い？）"
+  "「先頭から」連続している記号を取り除く"
   (if (or (null ls) (not (eql x (car ls))))
       (values nil ls)
       (multiple-value-bind (a b);続く関数が複数の値を返すときに，それら複数の返り値をbindするための関数
         (drop-same-code x (cdr ls));drop-same-codeの返り値はa, bにbindされる
         (values (cons x a) b))))
+;
+(defun drop-same-code (x ls)
+  (do ((ls ls (cdr ls)) (xs nil))
+      ((or (null ls) (not (eql x (car ls))))
+       (values xs ls))
+      (push x xs)))
+;
+(defun pack (ls)
+  "返り値が複数の関数をうまく使って再帰する"
+  (multiple-value-bind (xs ys)
+    (drop-same-code (car ls) ls)
+    (if (null ys)
+        (list xs)
+        (cons xs (pack ys)))))
+
+;; 39
+(defun pack-num-list (ls)
+  (labels ((pack-num-list-sub (ls s e)
+             (if (= (car ls) e)
+                 (pack-num-list-sub (cdr ls) s (1+ e))
+                 (cons (cons s (1- e)) (pack-num-list-sub (cdr ls) (cadr ls) (1+ (cadr ls)))))))
+    (pack-num-list-sub (cdr ls) (car ls) (1+ (car ls)))))
+;
+(defun pack-num-list (ls)
+  (labels ((push-num (s e a)
+             (if (= s e)
+                 (cons s a)
+                 (cons (cons s e) a)))
+           (iter (ls s e a)
+             (cond ((null ls) (nreverse (push-num s e a)))
+                   ((= (car ls) (1+ e)) (iter (cdr ls) s (car ls) a))
+                   (t (iter (cdr ls) (car ls) (car ls) (push-num s e a))))))
+    (iter (cdr ls) (car ls) (car ls) nil)))
+
+;; 40
+;
+(defun iota (n m)
+  (if (> n m)
+      nil
+      (cons n (iota (1+ n) m))))
+
+(defun expand-num-list (ls)
+  (cond ((null ls) nil)
+        ((consp (car ls)) (append (iota (caar ls) (cdar ls)) (expand-num-list (cdr ls))))
+        (t (cons (car ls) (expand-num-list (cdr ls))))))
+
+;; 41
+(defun encode (ls)
+  (mapcar #'(lambda (ils)
+              (cons (car ils) (length ils)))
+          (pack ls)))
+
+;; 42
+(defun decode (ls)
+  (labels ((num-list (x n)
+              (if (= n 0)
+                  nil
+                  (cons x (num-list x (1- n))))))
+     (apply #'append (mapcar #'(lambda (ils)
+                         (num-list (car ils) (cdr ils)))
+                         ls))))
+;
+(defun decode (ls)
+  (apply #'append (mapcar #'(lambda (xs)
+                              (make-list (cdr xs) :initial-element (car xs)))
+                          ls)))
+
+;; 43
+(defun any (pred ls)
+  (cond ((null ls) nil)
+        ((funcall pred (car ls)) t)
+        (t (any pred (cdr ls)))))
+(defun my-every (pred ls)
+  (cond ((null ls) t)
+        ((not (funcall pred (car ls))) nil)
+        (t (my-every pred (cdr ls)))))
+
+;; 44
+(defun my-maplist (func ls)
+  (if (null ls)
+      nil
+      (cons (funcall func ls) (my-maplist func (cdr ls)))))
+
+;; 45
+(defun for-each-list (fn comb term xs)
+  (if (null xs)
+      term
+      (funcall comb (funcall fn (car xs)) (for-each-list fn comb term (cdr xs)))))
